@@ -1399,17 +1399,19 @@ history. Older gateways without the capability continue using one connection.
   - AES-256-GCM 密钥：`HKDF-SHA256(key, salt=∅, info="dsh-rendezvous-blob-v1")`。
 - Worker 只存 `0x01 || nonce(12) || ciphertext || tag(16)` 的 base64url 密文，AAD 是路径字符串；不持有内容密钥。
 
+手机端采纳规则：同一 `gatewayId` 下 `url`/`key` 变化（托管重部署、手动↔托管切换、停用再启用）应更新本地配置并清空 `seenRev`；只有 `gatewayId` 与配对记录不一致才拒绝。响应来自已认证连接，不能用「URL 不同」拒绝，否则这些正常运维动作都会迫使重新扫码。托管 Worker 名由网关状态里的随机 `deploySalt` 与 `gatewayId` 派生，因此重新部署和停用后再启用复用同一 URL，也不会产生孤儿 Worker。
+
 网关每 60 秒检查一次地址变化，并把当前入口列表发布到用户自己的 Worker；设备撤销时删除对应记录。加密格式、blob 校验顺序、手机端刷新与冲突策略见 [地址簿对接](docs/rendezvous-app-integration.md)。
 
 Worker 源码随插件发布在 `rendezvous-worker/`。管理面（`/mgw/rendezvous`，仅本机管理入口）提供：
 
 | 请求 | 作用 |
 |---|---|
-| `GET /mgw/rendezvous` | 部署状态、publisher 状态与最近日志；不返回写密钥 |
-| `POST /mgw/rendezvous/deploy` | 启动 `wrangler login --device`（如需要）并部署托管 Worker；`202` |
+| `GET /mgw/rendezvous` | 部署状态、publisher 状态与最近日志；不返回写密钥。`configured=false` 且 `retained=true` 表示已停用但托管 Worker 与本地状态仍在 |
+| `POST /mgw/rendezvous/deploy` | 启动 `wrangler login --device`（如需要）并部署托管 Worker；`202`。已有保留状态时复用同一 Worker |
 | `POST /mgw/rendezvous/deploy/cancel` | 取消进行中的部署/登录 |
 | `POST /mgw/rendezvous/adopt` | 连接已有 Worker，body 为 `{url, writeSecret}`；先做一次幂等 DELETE 校验写密钥 |
-| `DELETE /mgw/rendezvous?deleteWorker=1` | 停用；托管 Worker 可一并删除 |
+| `DELETE /mgw/rendezvous?deleteWorker=1` | 停用；托管 Worker 可一并删除。`deleteWorker=0` 时保留 Worker、名称、URL 与本地写密钥，之后可重新启用 |
 
 手动配置 `rendezvousUrl`/`rendezvousWriteSecret` 时管理面拒绝部署/接管，以手动配置为准。独立仓库 `dsh-mobile-rendezvous` 仅作为参考实现，不再是从零部署的必需步骤。
 

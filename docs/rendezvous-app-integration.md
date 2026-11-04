@@ -90,14 +90,17 @@ body(302)  = AQABAgMEBQYHCAkKC2o9ixs6CrlWNdCqYJujnipSZYB1j0sz5t82XX8Su-FrC8YpOXS
 | 无 | 合法 | 保存（`seenRev` 留空） |
 | 有 | url/key/gatewayId 都相同 | 什么都不做 |
 | 有 | url 相同、key 不同 | 更新 key，**清空 `seenRev`**（新 key 是新的 rev 作用域） |
-| 有 | url 不同 | **拒绝覆盖**，只在菜单里显示一行灰字提示重新扫码 |
-| 有 | `gatewayId` 与配对载荷里的不同 | 整帧丢弃，同上 |
+| 有 | url 不同、gatewayId 相同 | 更新 url/key，**清空 `seenRev`**（Worker 迁移/重新部署；新 Worker 是新的 rev 作用域） |
+| 有 | `gatewayId` 与配对载荷里的不同 | 整帧丢弃，只在菜单里显示一行灰字提示 |
 
-`url` 相同而 `key` 不同是安全的：攻击者即使塞新 key，指向的仍是原来可信的
-Worker，没有写密钥的人写不进那条新路径，手机只会读到 404。
+`url` 或 `key` 变化都来自**已认证连接**，冒充者拿不到设备 token；同一
+`gatewayId` 下采纳它们是安全的。不能用「url 不同」拒绝，否则手动→托管、
+停用再启用、部署失败重试都会把用户逼回重新扫码。只有 `gatewayId` 变化才说明
+换了一台网关，此时才需要重新配对。
 
-重新配对会整体替换本地记录（包括清掉旧 `rendezvous`），这正是「换 Worker
-必须重新配对」的实现机制。
+托管部署的 Worker 名由网关状态里的随机 `deploySalt` 与 `gatewayId` 派生，
+所以停用后再启用、重新部署、甚至只丢失 `<deviceFile>.rendezvous.json` 都会
+回到同一个 Worker URL；客户端无需为此做一次性迁移。
 
 ## 5. 刷新时机（建议）
 
