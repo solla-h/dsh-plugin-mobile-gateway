@@ -82,6 +82,9 @@ test('deploy: whoami -> deploy -> secret, state is 0600 and secret never appears
     assert.ok(state.writeSecret.length >= 32)
     const secretCall = calls.find((call) => call.args.includes('secret'))
     assert.ok(secretCall)
+    assert.equal(secretCall.args[secretCall.args.indexOf('--name') + 1], status.scriptName,
+      'the secret must target the deployed Worker, not wrangler.toml\'s default name')
+    assert.equal(secretCall.args[secretCall.args.indexOf('--config') + 1], path.resolve('rendezvous-worker/wrangler.toml'))
     assert.equal(secretCall.child.stdinData, `${state.writeSecret}\n`)
     if (process.platform !== 'win32') {
       assert.equal(fs.statSync(file).mode & 0o777, 0o600)
