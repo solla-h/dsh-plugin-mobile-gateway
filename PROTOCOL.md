@@ -1374,6 +1374,33 @@ history. Older gateways without the capability continue using one connection.
 移动端在 WebSocket 握手中通过 `X-DSH-Device-Name` 上报 UTF-8 设备名称的标准 Base64 编码；配对和凭据重连时均发送。网关不使用控制面板指定的名称，未上报时使用“未命名设备”。可信设备接口保留原始 `name`，并提供 `displayName`；同名设备显示编号后缀，例如“我的手机 (1)”“我的手机 (2)”。
 
 
+## 19. 地址簿（`rendezvous-v1`）
+
+`rendezvous-v1` 是可选能力，**仅对已认证设备、仅当网关同时配置了 `rendezvousUrl` 和 `rendezvousWriteSecret` 时出现**。未配置时 `hello.capabilities` 与旧版逐项相同；旧客户端不认识该能力，行为不变。
+
+已认证连接（control 或 legacy 单连接）可发送：
+
+```json
+{ "type": "rendezvous-config", "requestId": "<uuid>" }
+```
+
+成功响应只发给请求方这一条连接，不广播：
+
+```json
+{ "kind": "rendezvous-config", "requestId": "<原样回显>", "url": "https://dsh-rendezvous.x.workers.dev", "key": "<43 字符 base64url>", "gatewayId": "<uuid>" }
+```
+
+- 未认证连接：`{kind:'error', code:'authentication-required', requestType:'rendezvous-config'}`。
+- 网关未配置地址簿：`{kind:'error', code:'rendezvous/disabled'}`。
+- `X-DSH-Channel: conversation` 的连接会先被现有 wrong-channel 逻辑拒绝。
+- 同一设备重复请求返回同一把 key；设备重新配对保留 key；设备撤销时异步删除 Worker 中的记录。
+- `key` 是 32 字节随机数的 base64url（无填充）。手机用它派生：
+  - Worker 路径：`base64url(HKDF-SHA256(key, salt=∅, info="dsh-rendezvous-path-v1"))`；
+  - AES-256-GCM 密钥：`HKDF-SHA256(key, salt=∅, info="dsh-rendezvous-blob-v1")`。
+- Worker 只存 `0x01 || nonce(12) || ciphertext || tag(16)` 的 base64url 密文，AAD 是路径字符串；不持有内容密钥。
+
+网关每 60 秒检查一次地址变化，并把当前入口列表发布到用户自己的 Worker；设备撤销时删除对应记录。加密格式、blob 校验顺序、手机端刷新与冲突策略见 [地址簿对接](docs/rendezvous-app-integration.md)。Worker 模板见独立仓库 `dsh-mobile-rendezvous`。
+
 ## 官方语音输入（`speech-input-v1`）
 
 网关代理 DSH 0.2.0-rc.2 的官方实验性 `speech` Remote。先在 DSH 插件管理中启用 `@deepseek-ai/dsh-experimental-voice-input-bundle`（“语音输入”），并在详情中下载、准备模型；也可由客户端通过下面的准备接口操作。识别模型运行在 DSH 主机上，不进入移动安装包。

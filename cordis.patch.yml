@@ -17,6 +17,12 @@
         # Optional additional reachable addresses for this SAME gateway:
         # endpoints:
         #   - wss://gateway.example.com/ws/mobile
+        # Optional encrypted address book (BYO Cloudflare Worker, see
+        # docs/rendezvous-app-integration.md). Both values are required to
+        # enable it; the write secret is never logged or sent to phones, but
+        # the schema has no secret field type, so it is stored in this file.
+        # rendezvousUrl: https://dsh-rendezvous.example.workers.dev
+        # rendezvousWriteSecret: <WRITE_SECRET printed by the Worker setup>
         gatewayWaitTimeoutMs: 300000
         requireAuth: true
         adminLoopbackOnly: true
