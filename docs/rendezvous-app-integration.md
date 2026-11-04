@@ -10,7 +10,7 @@
 - 协议：`hello.capabilities` 中的 `rendezvous-v1`（仅已认证设备、仅网关启用时）。
 - 配置帧：手机发 `{type:'rendezvous-config', requestId}`，网关回
   `{kind:'rendezvous-config', requestId, url, key, gatewayId}`。
-- Worker：独立仓库 `dsh-mobile-rendezvous`（约 100 行 + 一个 SQLite Durable Object）。
+- Worker：随插件发布的 `rendezvous-worker/`（约 100 行 + 一个 SQLite Durable Object），面板可代为部署。
 
 ## 1. 信任模型
 
@@ -109,7 +109,7 @@ Worker，没有写密钥的人写不进那条新路径，手机只会读到 404�
 
 ## 6. Worker 接口
 
-见 `dsh-mobile-rendezvous` 仓库。摘要：
+Worker 源码随插件发布在 `rendezvous-worker/`。用户可在“连接与配对 → 地址簿”中完成 Cloudflare 设备登录与托管部署，或用手动配置连接已有 Worker；独立仓库 `dsh-mobile-rendezvous` 仅作参考。摘要：
 
 ```
 GET    /r/<43-char path>   无鉴权，路径即能力；200 密文 / 404

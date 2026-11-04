@@ -9,6 +9,10 @@ const { create, act } = require('react-test-renderer')
 function loadPanel(locale = 'zh', statusOverrides = {}) {
   let api, sequence = 0, failSave = false, failStatus = false, statusGate = null, saveGate = null
   const calls = [], timers = new Map(), timeouts = new Map()
+  let rendezvous = {
+    phase: 'idle', configured: false, managed: false, url: null, manual: false,
+    publisher: { configured: false },
+  }
   let status = {
     platform: 'darwin', gatewayEnabled: true, gatewayMode: 'persistent', requireAuth: true,
     pairingRoute: 'lan', wsPath: '/ws/mobile', publicUrl: 'wss://gateway.example/ws/mobile',
@@ -20,7 +24,20 @@ function loadPanel(locale = 'zh', statusOverrides = {}) {
   const fetch = async (url, options = {}) => {
     calls.push({ url, options })
     let data = {}, ok = true
-    if (url === '/mgw/status') {
+    if (url.startsWith('/mgw/rendezvous')) {
+      if (options.method === 'POST' && url === '/mgw/rendezvous/deploy') {
+        rendezvous = { ...rendezvous, phase: 'checking' }
+      } else if (options.method === 'POST' && url === '/mgw/rendezvous/deploy/cancel') {
+        rendezvous = { ...rendezvous, phase: 'idle' }
+      } else if (options.method === 'POST' && url === '/mgw/rendezvous/adopt') {
+        const body = JSON.parse(options.body)
+        rendezvous = { ...rendezvous, phase: 'ready', configured: true, managed: false, url: body.url }
+      } else if (options.method === 'DELETE') {
+        rendezvous = { ...rendezvous, phase: 'idle', configured: false, managed: false, url: null }
+      }
+      data = rendezvous
+    }
+    else if (url === '/mgw/status') {
       const gate = statusGate; statusGate = null
       if (gate) await new Promise((resolve, reject) => {
         const cancel = () => reject(new Error('aborted'))
@@ -65,11 +82,12 @@ function loadPanel(locale = 'zh', statusOverrides = {}) {
   }
   const document = { hidden: true, getElementById: () => ({ focus() {} }), addEventListener() {}, removeEventListener() {}, activeElement: null }
   const file = process.env.MGW_CLIENT_SOURCE || path.join(__dirname, '../lib/client.js')
-  const source = fs.readFileSync(file, 'utf8').replace('    return module.exports', '    exports.testing = { DevicePanel, pairingConnectionPlan, recommendConnection, ConnectionChoiceGuide, ConnectionPlanSummary, GatewaySelect, panelCss, styles, colors }; return module.exports')
+  const source = fs.readFileSync(file, 'utf8').replace('    return module.exports', '    exports.testing = { DevicePanel, RendezvousCard, pairingConnectionPlan, recommendConnection, ConnectionChoiceGuide, ConnectionPlanSummary, GatewaySelect, panelCss, styles, colors }; return module.exports')
   vm.runInNewContext(source, { window, document, navigator: { language: locale, userAgent: 'test' }, fetch, URL, AbortController, console, setTimeout, clearTimeout })
   return { ...api.testing, calls, timers, timeouts, failNextSave() { failSave = true },
     failNextStatus() { failStatus = true },
     updateStatus(update) { status = { ...status, ...update } },
+    updateRendezvous(update) { rendezvous = { ...rendezvous, ...update } },
     delayNextStatus() { let release; statusGate = new Promise(resolve => { release = resolve }); return release },
     delayNextSave() { let release; saveGate = new Promise(resolve => { release = resolve }); return release },
   }
@@ -636,5 +654,46 @@ test('wizard modal traps keyboard focus and closes without saving or closing the
   assert.equal(root.root.findAllByProps({ id: 'mgw-connection-wizard' }).length, 0)
   assert.equal(api.calls.filter(call => call.url === '/mgw/connection').length, 0)
   assert.equal(root.root.findAllByProps({ id: 'mgw-manual-route' }).length, 1)
+  await act(async () => root.unmount())
+})
+
+test('address book card deploys from the idle state and renders the device login', async () => {
+  const api = loadPanel()
+  let root
+  await act(async () => { root = create(React.createElement(api.RendezvousCard, { active: true })) })
+  const findButton = name => root.root.findAllByType('button').find(button => button.props.onClick?.name === name)
+  await act(async () => findButton('deploy').props.onClick())
+  assert.equal(api.calls.filter(call => call.url === '/mgw/rendezvous/deploy' && call.options.method === 'POST').length, 1)
+  assert.match(JSON.stringify(root.toJSON()), /正在检查 Cloudflare 账号/)
+
+  api.updateRendezvous({ phase: 'login', login: {
+    url: 'https://dash.cloudflare.com/oauth2/device', code: 'ABCD-1234',
+    qrDataUrl: 'data:image/png;base64,AA==',
+  } })
+  await act(async () => root.unmount())
+  await act(async () => { root = create(React.createElement(api.RendezvousCard, { active: true })) })
+  const image = root.root.findByType('img')
+  assert.equal(image.props.src, 'data:image/png;base64,AA==')
+  assert.equal(root.root.findByType('a').props.href, 'https://dash.cloudflare.com/oauth2/device')
+  assert.equal(root.root.findAllByType('code').some(node => node.props.children === 'ABCD-1234'), true)
+  await act(async () => root.root.findAllByType('button').find(button => button.props.onClick?.name === 'cancel').props.onClick())
+  assert.equal(api.calls.filter(call => call.url === '/mgw/rendezvous/deploy/cancel').length, 1)
+  await act(async () => root.unmount())
+})
+
+test('address book stop deletes the managed Worker by default and can keep it', async () => {
+  const api = loadPanel()
+  api.updateRendezvous({
+    phase: 'ready', configured: true, managed: true, url: 'https://book.example.workers.dev',
+    publisher: { configured: true, url: 'https://book.example.workers.dev', devices: 2, lastPublishAt: Date.now() },
+  })
+  let root
+  await act(async () => { root = create(React.createElement(api.RendezvousCard, { active: true })) })
+  const checkbox = root.root.findByType('input')
+  assert.equal(checkbox.props.checked, true)
+  await act(async () => checkbox.props.onChange({ target: { checked: false } }))
+  await act(async () => root.root.findAllByType('button').find(button => button.props.onClick?.name === 'remove').props.onClick())
+  const deletion = api.calls.find(call => call.options.method === 'DELETE')
+  assert.equal(deletion.url, '/mgw/rendezvous?deleteWorker=0')
   await act(async () => root.unmount())
 })

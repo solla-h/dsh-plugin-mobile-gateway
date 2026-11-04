@@ -1376,7 +1376,7 @@ history. Older gateways without the capability continue using one connection.
 
 ## 19. 地址簿（`rendezvous-v1`）
 
-`rendezvous-v1` 是可选能力，**仅对已认证设备、仅当网关同时配置了 `rendezvousUrl` 和 `rendezvousWriteSecret` 时出现**。未配置时 `hello.capabilities` 与旧版逐项相同；旧客户端不认识该能力，行为不变。
+`rendezvous-v1` 是可选能力，**仅对已认证设备、仅当网关已启用地址簿时出现**：可以手动配置 `rendezvousUrl` + `rendezvousWriteSecret`，也可以在管理面板/CLI 中完成托管部署（配置保存在 `<deviceFile>.rendezvous.json`）。未配置时 `hello.capabilities` 与旧版逐项相同；旧客户端不认识该能力，行为不变。
 
 已认证连接（control 或 legacy 单连接）可发送：
 
@@ -1399,7 +1399,19 @@ history. Older gateways without the capability continue using one connection.
   - AES-256-GCM 密钥：`HKDF-SHA256(key, salt=∅, info="dsh-rendezvous-blob-v1")`。
 - Worker 只存 `0x01 || nonce(12) || ciphertext || tag(16)` 的 base64url 密文，AAD 是路径字符串；不持有内容密钥。
 
-网关每 60 秒检查一次地址变化，并把当前入口列表发布到用户自己的 Worker；设备撤销时删除对应记录。加密格式、blob 校验顺序、手机端刷新与冲突策略见 [地址簿对接](docs/rendezvous-app-integration.md)。Worker 模板见独立仓库 `dsh-mobile-rendezvous`。
+网关每 60 秒检查一次地址变化，并把当前入口列表发布到用户自己的 Worker；设备撤销时删除对应记录。加密格式、blob 校验顺序、手机端刷新与冲突策略见 [地址簿对接](docs/rendezvous-app-integration.md)。
+
+Worker 源码随插件发布在 `rendezvous-worker/`。管理面（`/mgw/rendezvous`，仅本机管理入口）提供：
+
+| 请求 | 作用 |
+|---|---|
+| `GET /mgw/rendezvous` | 部署状态、publisher 状态与最近日志；不返回写密钥 |
+| `POST /mgw/rendezvous/deploy` | 启动 `wrangler login --device`（如需要）并部署托管 Worker；`202` |
+| `POST /mgw/rendezvous/deploy/cancel` | 取消进行中的部署/登录 |
+| `POST /mgw/rendezvous/adopt` | 连接已有 Worker，body 为 `{url, writeSecret}`；先做一次幂等 DELETE 校验写密钥 |
+| `DELETE /mgw/rendezvous?deleteWorker=1` | 停用；托管 Worker 可一并删除 |
+
+手动配置 `rendezvousUrl`/`rendezvousWriteSecret` 时管理面拒绝部署/接管，以手动配置为准。独立仓库 `dsh-mobile-rendezvous` 仅作为参考实现，不再是从零部署的必需步骤。
 
 ## 官方语音输入（`speech-input-v1`）
 

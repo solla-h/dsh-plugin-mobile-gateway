@@ -287,6 +287,14 @@ Quick Tunnel needs no Cloudflare account, Token, or domain, but its address may 
 
 Update Tunnel Configuration saves the mode and named-Tunnel parameters; unchanged settings do not reconnect. Restart Tunnel interrupts mobile connections and recreates the Cloudflare tunnel without restarting DSH Web. Quick mode may obtain a new address, clearing the old QR code; scan again with the new URL. This does not upgrade `cloudflared` automatically.
 
+### Address Book (Optional): Recovery Without Re-scanning
+
+If a Quick Tunnel address changes or the LAN IP moves, the phone normally has to scan a new QR code. The optional encrypted address book stores the gateway's current entry list in the user's own Cloudflare Worker; the phone checks it when its saved address stops working, so re-pairing is unnecessary.
+
+Enable it under Connection & Pairing → Address book. The panel runs `wrangler login --device`: open the printed URL once and authorize the Cloudflare account (the free plan is enough). The plugin then deploys a Worker named `dsh-rendezvous-<random>` from the bundled `rendezvous-worker/` source and keeps the write secret in `<deviceFile>.rendezvous.json` (mode `0600`). Cloudflare stores ciphertext only; the decryption key stays on this host and is delivered only to paired devices over the authenticated connection.
+
+Disabling a managed address book deletes the Worker by default; clear the checkbox to keep it. "Use an existing Worker" connects to a Worker deployed manually. Some networks, including mainland China, may not reach `workers.dev` directly; use a named Tunnel or Tailscale instead. The phone must support `rendezvous-v1` (see the [client contract](docs/rendezvous-app-integration.md)).
+
 ### Cloudflare Named Tunnel (Fixed Address)
 
 1. [Create a remotely managed Tunnel](https://developers.cloudflare.com/tunnel/get-started/) in Cloudflare, add a public hostname such as `gateway.example.com`, and set **Service URL** to `http://127.0.0.1:3082`. No Cloudflare system service or inbound router port is required.

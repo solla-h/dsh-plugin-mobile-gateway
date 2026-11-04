@@ -287,6 +287,14 @@ Quick Tunnel 无需 Cloudflare 账户、Token 或自己的公网域名，但地�
 
 面板中的“更新 Tunnel 配置”保存所选模式及命名 Tunnel 参数；配置不变时不会重新连接。“重启 Tunnel”会断开当前移动连接并重建 Cloudflare 隧道，不会重启 DSH Web；Quick Tunnel 重启后可能取得新地址，旧二维码会清除，需按新地址重新扫码。此操作不会自动升级 `cloudflared` 到最新版本。
 
+### 地址簿（可选）：地址变化后免重扫
+
+Quick Tunnel 地址变化或局域网 IP 改变后，手机原本需要重新扫码。可选的加密地址簿会把网关当前入口列表发布到用户自己的 Cloudflare Worker；手机在旧地址失效时查询这里，不需要重新配对。
+
+在“连接与配对 → 地址簿”中开启。面板会运行 `wrangler login --device`：在任意设备打开打印出的地址并授权 Cloudflare 账户即可（免费账户足够）。插件随后用内置的 `rendezvous-worker/` 源码部署名为 `dsh-rendezvous-<随机>` 的 Worker，并把写密钥保存在 `<deviceFile>.rendezvous.json`（权限 `0600`）。Cloudflare 只保存密文；解密密钥留在本机，只通过已鉴权连接下发给已配对设备。
+
+停用托管地址簿时默认同时删除 Worker；取消勾选则保留。选择“使用已有 Worker”可以连接手动部署的 Worker。部分网络（含中国大陆）可能无法直接访问 `workers.dev`，可改用命名 Tunnel 或 Tailscale。手机端需支持 `rendezvous-v1`，见 [客户端契约](docs/rendezvous-app-integration.md)。
+
 ### Cloudflare 命名 Tunnel（固定地址）
 
 1. 在 [Cloudflare 控制台创建远程管理的 Tunnel](https://developers.cloudflare.com/tunnel/get-started/)，添加一个公开域名（例如 `gateway.example.com`），将该路由的 **Service URL** 设为 `http://127.0.0.1:3082`。无需安装 Cloudflare 系统服务，也无需开放路由器入站端口。
