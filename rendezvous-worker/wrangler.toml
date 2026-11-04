@@ -1,0 +1,13 @@
+name = "dsh-rendezvous"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# A single SQLite-backed Durable Object is enough for one person's address
+# book: at most 64 records, each an opaque ciphertext of at most 8 KB.
+[[durable_objects.bindings]]
+name = "BOOK"
+class_name = "Book"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Book"]
