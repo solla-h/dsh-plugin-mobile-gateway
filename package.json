@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-mobile-gateway",
-  "version": "0.11.2",
-  "description": "Whaleness 移动网关，连接 DeepSeek Harness 与移动设备，支持安全配对、实时会话同步、智能体团队与子会话、插件管理、官方语音输入及文件传输。0.11.2 新增连接方案向导、Tailscale 私有网络入口和网络检测，默认局域网直连，支持 Cloudflare Tunnel；优化配对与提示交互，P2P 入口暂标为建设中。",
+  "version": "0.12.0-rdv.1",
+  "description": "Whaleness 移动网关，连接 DeepSeek Harness 与移动设备，支持安全配对、实时会话同步、智能体团队与子会话、插件管理、官方语音输入及文件传输。本 fork 版基于上游 0.11.2，新增可选加密地址簿（rendezvous-v1）与 Cloudflare Worker 托管部署。",
   "main": "lib/index.mjs",
   "files": [
     "bin",

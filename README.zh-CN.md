@@ -1,5 +1,11 @@
 [English](README.md) · **简体中文** · [日本語](docs/readme/README.ja.md) · [한국어](docs/readme/README.ko.md) · [Español](docs/readme/README.es.md) · [Français](docs/readme/README.fr.md) · [Deutsch](docs/readme/README.de.md) · [Português (Brasil)](docs/readme/README.pt-BR.md)
 
+> **Fork 版本 `v0.12.0-rdv.1`** —— 基于上游 0.11.2，新增可选的加密地址簿（rendezvous-v1）与 Cloudflare Worker 托管部署。安装本 fork：
+> ```sh
+> dsh plugin --profile web add github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.1
+> ```
+> 上游项目：[Clarklevis1995/dsh-plugin-mobile-gateway](https://github.com/Clarklevis1995/dsh-plugin-mobile-gateway)。
+
 > 部分深入协议与接入文档目前仅提供中文。
 
 <p align="center">
