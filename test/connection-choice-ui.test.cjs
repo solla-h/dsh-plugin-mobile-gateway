@@ -681,6 +681,25 @@ test('address book card deploys from the idle state and renders the device login
   await act(async () => root.unmount())
 })
 
+test('address book retained state shows the reusable URL and re-enable action', async () => {
+  const api = loadPanel()
+  api.updateRendezvous({
+    phase: 'idle', configured: false, retained: true, managed: true,
+    url: 'https://book.example.workers.dev',
+    publisher: { configured: false },
+  })
+  let root
+  await act(async () => { root = create(React.createElement(api.RendezvousCard, { active: true })) })
+  const text = JSON.stringify(root.toJSON())
+  assert.match(text, /已停用（Worker 已保留）/)
+  assert.match(text, /重新启用地址簿/)
+  assert.match(text, /https:\/\/book\.example\.workers\.dev/)
+  const deploy = root.root.findAllByType('button').find(button => button.props.onClick?.name === 'deploy')
+  await act(async () => deploy.props.onClick())
+  assert.equal(api.calls.filter(call => call.url === '/mgw/rendezvous/deploy' && call.options.method === 'POST').length, 1)
+  await act(async () => root.unmount())
+})
+
 test('address book stop deletes the managed Worker by default and can keep it', async () => {
   const api = loadPanel()
   api.updateRendezvous({
