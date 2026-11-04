@@ -289,7 +289,10 @@ function waitForFrame(socket, predicate, label = 'frame') {
 const waitForKind = (socket, kind) => waitForFrame(socket, (frame) => frame.kind === kind, kind)
 
 async function startGateway(options = {}) {
+  const { rendezvousState, ...pluginOptions } = options
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-rendezvous-gw-'))
+  const deviceFile = path.join(temp, 'devices.json')
+  if (rendezvousState) fs.writeFileSync(`${deviceFile}.rendezvous.json`, JSON.stringify(rendezvousState))
   let managementRoute
   let upgradeRoute
   const disposers = []
@@ -338,9 +341,9 @@ async function startGateway(options = {}) {
     gatewayWaitTimeoutMs: 1_000,
     adminLoopbackOnly: true,
     pairingTtlMs: 60_000,
-    deviceFile: path.join(temp, 'devices.json'),
+    deviceFile,
     publicUrl: 'wss://gw.example.com/ws/mobile',
-    ...options,
+    ...pluginOptions,
   })
   server.listen(0, '127.0.0.1')
   await once(server, 'listening')
@@ -434,6 +437,34 @@ test('frames: capability is authenticated-only; config is stable and decryptable
     assert.equal(revoked.status, 200)
     await settle(30)
     assert.equal(worker.puts.at(-1).init.method, 'DELETE')
+    socket.close()
+  } finally {
+    worker.restore()
+    await gateway.close()
+  }
+})
+
+test('frames: a managed state file returns the deployed Worker URL', async () => {
+  const worker = installFakeWorker()
+  const gateway = await startGateway({
+    rendezvousState: {
+      version: 1,
+      managed: true,
+      url: 'https://book.example.workers.dev',
+      writeSecret: 's'.repeat(32),
+      accountId: null,
+      scriptName: null,
+      deployedAt: 1,
+      workerVersion: 1,
+    },
+  })
+  try {
+    const { socket, hello } = await pairDevice(gateway, 'integration-device-0003')
+    assert.equal(hello.capabilities.includes('rendezvous-v1'), true)
+    socket.send(JSON.stringify({ type: 'rendezvous-config', requestId: 'managed-1' }))
+    const config = await waitForKind(socket, 'rendezvous-config')
+    assert.equal(config.url, 'https://book.example.workers.dev')
+    assert.equal(config.requestId, 'managed-1')
     socket.close()
   } finally {
     worker.restore()
