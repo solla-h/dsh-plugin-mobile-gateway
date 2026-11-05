@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
-import { checkPublicEndpoint } from '../lib/public-endpoint-check.mjs'
+import { checkPublicEndpoint, resolveViaDoh } from '../lib/public-endpoint-check.mjs'
 import { createCloudflareTunnel } from '../lib/cloudflare-tunnel.mjs'
 import fs from 'node:fs/promises'
 import os from 'node:os'
@@ -15,9 +15,12 @@ test('probe header is bounded and rejects header injection', () => {
 })
 
 const lookup = async () => ({ address: '192.0.2.1', family: 4 })
-function mockRequest({ status = 401, error, upgrade = false, hang = false, echo = true } = {}) {
+function mockRequest({ status = 401, error, upgrade = false, hang = false, echo = true, address = '192.0.2.1' } = {}) {
   return (options) => {
     assert.equal(options.rejectUnauthorized, true)
+    assert.equal(options.hostname, address)
+    assert.equal(options.servername, 'example.com')
+    assert.equal(options.headers.Host, 'example.com')
     assert.equal(options.headers.Authorization, undefined)
     const req = new EventEmitter()
     req.destroy = () => {}
@@ -36,12 +39,37 @@ test('reject invalid URLs and credentials before network access', async () => {
   }
 })
 test('DNS failure is actionable', async () => {
-  const r = await checkPublicEndpoint('wss://example.com/ws/mobile', { lookup: async () => { throw Object.assign(new Error(), { code: 'ENOTFOUND' }) } })
+  const r = await checkPublicEndpoint('wss://example.com/ws/mobile', {
+    lookup: async () => { throw Object.assign(new Error(), { code: 'ENOTFOUND' }) },
+    dohLookup: async () => { throw Object.assign(new Error(), { code: 'ENOTFOUND' }) },
+  })
   assert.equal(r.state, 'dns-error'); assert.match(r.message, /CNAME/)
 })
 test('bounded DNS timeout', async () => {
-  const r = await checkPublicEndpoint('wss://example.com', { lookup: () => new Promise(() => {}), timeoutMs: 10 })
+  const r = await checkPublicEndpoint('wss://example.com', {
+    lookup: () => new Promise(() => {}),
+    dohLookup: async () => { throw Object.assign(new Error(), { code: 'ETIMEDOUT' }) },
+    timeoutMs: 10,
+  })
   assert.equal(r.code, 'ETIMEDOUT')
+})
+test('DoH fallback resolves a poisoned local DNS name', async () => {
+  const r = await checkPublicEndpoint('wss://example.com/ws/mobile', {
+    lookup: async () => { throw Object.assign(new Error(), { code: 'ENOTFOUND' }) },
+    dohLookup: async () => ({ address: '104.16.1.1', family: 4 }),
+    request: mockRequest({ address: '104.16.1.1' }),
+  })
+  assert.equal(r.state, 'reachable')
+  assert.equal(r.dnsSource, 'doh')
+})
+test('DoH returns the first A answer', async () => {
+  const answer = await resolveViaDoh('example.com', {
+    request: async () => ({
+      Status: 0,
+      Answer: [{ type: 5, data: 'alias.example.com' }, { type: 1, data: '104.16.1.1' }],
+    }),
+  })
+  assert.deepEqual(answer, { address: '104.16.1.1', family: 4 })
 })
 test('verified TLS with gateway auth rejection means route reachable', async () => {
   const r = await checkPublicEndpoint('wss://example.com/ws/mobile', { lookup, request: mockRequest() })

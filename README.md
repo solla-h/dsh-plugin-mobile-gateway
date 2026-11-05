@@ -1,8 +1,8 @@
 **English** · [简体中文](README.zh-CN.md) · [日本語](docs/readme/README.ja.md) · [한국어](docs/readme/README.ko.md) · [Español](docs/readme/README.es.md) · [Français](docs/readme/README.fr.md) · [Deutsch](docs/readme/README.de.md) · [Português (Brasil)](docs/readme/README.pt-BR.md)
 
-> **Fork release `v0.12.0-rdv.1`** — based on upstream 0.11.2, adds the optional encrypted rendezvous address book and managed Cloudflare Worker deployment. Install this fork with:
+> **Fork release `v0.12.0-rdv.2`** — based on upstream 0.11.2, adds the optional encrypted rendezvous address book, managed Cloudflare Worker deployment, and a public-DoH fallback for the endpoint check. Install this fork with:
 > ```sh
-> dsh plugin --profile web add github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.1
+> dsh plugin --profile web add github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.2
 > ```
 > Upstream project: [Clarklevis1995/dsh-plugin-mobile-gateway](https://github.com/Clarklevis1995/dsh-plugin-mobile-gateway).
 
@@ -313,7 +313,7 @@ Both Cloudflare routes accept only `/ws/mobile` WebSocket. Other HTTP paths, inc
 
 `state: online` means only that cloudflared registered a tunnel connection, not that the public hostname, TLS, or origin route works. Status also includes `endpointHealth` (state, hint, check time, error code) and `publicReady`. The panel checks once after connecting; Check Public DNS / TLS / WebSocket retries via the management-authenticated `POST /mgw/cloudflare/check` without restarting the Tunnel.
 
-Checks use system DNS and HTTPS WebSocket requests with strict certificate verification, no pairing/device tokens, and no redirects. Only HTTP 401 with the gateway echoing the fresh random probe marker proves the authenticated route is reachable; generic proxy/Cloudflare Access 401 responses do not count. The marker appears only in rejections without valid device credentials and grants no access. This is a local network snapshot, not proof of phone connectivity, authentication, or session sync.
+Checks use system DNS first and fall back to public DoH (AliDNS, Cloudflare, DNSPod) when local DNS fails, then make an HTTPS WebSocket request with strict certificate verification, no pairing/device tokens, and no redirects. Only HTTP 401 with the gateway echoing the fresh random probe marker proves the authenticated route is reachable; generic proxy/Cloudflare Access 401 responses do not count. The marker appears only in rejections without valid device credentials and grants no access. This is a local network snapshot, not proof of phone connectivity, authentication, or session sync; `dnsSource: "doh"` means the host's local DNS was poisoned or blocked while the public record and route were still valid.
 
 Local DNS failure does not prove a public record is absent: new records may encounter cached NXDOMAIN, local DNS, VPN, or proxy issues. Check the public hostname and proxied CNAME, then retry later; do not disable TLS verification. The plugin runs remotely managed Tunnels using a Tunnel Token, which does not create DNS or hostname routes. Separately authorized cloudflared CLI/API operations can create them, but are outside this check.
 
