@@ -1,8 +1,8 @@
 **English** · [简体中文](README.zh-CN.md) · [日本語](docs/readme/README.ja.md) · [한국어](docs/readme/README.ko.md) · [Español](docs/readme/README.es.md) · [Français](docs/readme/README.fr.md) · [Deutsch](docs/readme/README.de.md) · [Português (Brasil)](docs/readme/README.pt-BR.md)
 
-> **Fork release `v0.12.0-rdv.2`** — based on upstream 0.11.2, adds the optional encrypted rendezvous address book, managed Cloudflare Worker deployment, and a public-DoH fallback for the endpoint check. Install this fork with:
+> **Fork release `v0.12.0-rdv.3`** — based on upstream 0.11.2, adds the optional encrypted rendezvous address book, managed Cloudflare Worker deployment, and a public-DoH fallback for the endpoint check; rdv.3 retries the endpoint check while DNS propagates and fixes misleading Cloudflare/LAN/address-book notices. Install this fork with:
 > ```sh
-> dsh plugin --profile web add github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.2
+> dsh plugin --profile web add github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3
 > ```
 > Upstream project: [Clarklevis1995/dsh-plugin-mobile-gateway](https://github.com/Clarklevis1995/dsh-plugin-mobile-gateway).
 

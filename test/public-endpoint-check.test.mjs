@@ -108,6 +108,32 @@ test('online tunnel checks once, supports retry and ignores stale results after 
   tunnel.dispose()
 })
 
+test('online tunnel retries a failed first endpoint check', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mgw-retry-test-'))
+  const file = path.join(dir, 'state.json')
+  await fs.writeFile(file, JSON.stringify({ version: 1, enabled: true, mode: 'named', hostname: 'example.com', token: 'test-token' }))
+  const child = new EventEmitter(); child.stdout = new EventEmitter(); child.stderr = new EventEmitter(); child.kill = () => { child.killed = true }
+  let calls = 0
+  const tunnel = createCloudflareTunnel({
+    file, port: 0, wsPath: '/ws/mobile', isGatewayEnabled: () => true, onUpgrade() {},
+    prepareExecutable: async () => 'mock', spawnProcess: () => child, endpointRetryDelays: [5, 5],
+    probeEndpoint: async () => {
+      calls += 1
+      return calls === 1
+        ? { state: 'dns-error', message: 'not propagated yet' }
+        : { state: 'reachable', message: 'ok' }
+    },
+  })
+  await tunnel.reconcile()
+  await new Promise((resolve) => setImmediate(resolve))
+  child.stdout.emit('data', Buffer.from('Registered tunnel connection'))
+  await new Promise((resolve) => setTimeout(resolve, 30))
+  assert.ok(calls >= 2)
+  assert.equal(tunnel.snapshot().publicReady, true)
+  assert.equal(tunnel.snapshot().endpointRetry, null)
+  tunnel.dispose()
+})
+
 test('tunnel snapshot does not claim public readiness while disabled', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mgw-check-test-'))
   const tunnel = createCloudflareTunnel({ file: path.join(dir, 'state.json'), supported: false, isGatewayEnabled: () => false })

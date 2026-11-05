@@ -1,8 +1,8 @@
 [English](README.md) · **简体中文** · [日本語](docs/readme/README.ja.md) · [한국어](docs/readme/README.ko.md) · [Español](docs/readme/README.es.md) · [Français](docs/readme/README.fr.md) · [Deutsch](docs/readme/README.de.md) · [Português (Brasil)](docs/readme/README.pt-BR.md)
 
-> **Fork 版本 `v0.12.0-rdv.2`** —— 基于上游 0.11.2，新增可选的加密地址簿（rendezvous-v1）、Cloudflare Worker 托管部署，以及公网入口检测的公共 DoH 兜底。安装本 fork：
+> **Fork 版本 `v0.12.0-rdv.3`** —— 基于上游 0.11.2，新增可选的加密地址簿（rendezvous-v1）、Cloudflare Worker 托管部署，以及公网入口检测的公共 DoH 兜底；rdv.3 让入口检测在 DNS 传播期间自动重试，并修正网关面板里会误导人的 Cloudflare/LAN/地址簿提示。安装本 fork：
 > ```sh
-> dsh plugin --profile web add github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.2
+> dsh plugin --profile web add github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3
 > ```
 > 上游项目：[Clarklevis1995/dsh-plugin-mobile-gateway](https://github.com/Clarklevis1995/dsh-plugin-mobile-gateway)。
 
