@@ -4,13 +4,13 @@
 > ```sh
 > dsh plugin --profile web add github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3
 > ```
-> 上游项目：[Clarklevis1995/dsh-plugin-mobile-gateway](https://github.com/Clarklevis1995/dsh-plugin-mobile-gateway)。
+> 上游项目：[Clarklevis1995/dsh-plugin-mobile-gateway](https://github.com/Clarklevis1995/dsh-plugin-mobile-gateway)。Fork 维护规则：[docs/MAINTAINING.md](docs/MAINTAINING.md)。
 
 > 部分深入协议与接入文档目前仅提供中文。
 
-<p align="center">
-  <img src="docs/assets/whale-girl-ios-app-promo-16x9.png" alt="DeepSeek Harness Mobile 与移动网关" width="100%">
-</p>
+本 fork 为 [DSH Mobile](https://github.com/solla-h/dsh-mobile-app) 维护，目前面向 Android 公开 alpha，iOS 暂缓。新用户请从[使用说明](https://github.com/solla-h/dsh-mobile-app/blob/master/docs/USER-GUIDE.zh-CN.md)和[版本锁定](https://github.com/solla-h/dsh-mobile-app/blob/master/compatibility.json)开始：DSH `0.2.1-rc.5` + 网关 `0.12.0-rdv.3`。**安装或更新插件前先停止 DSH Web 操作系统进程，完成后再启动。**
+
+下文保留上游实现历史及其 `0.2.1-rc.2` 适配层基线；历史“尚未发布”说明和其他客户端截图不代表本 fork 配套 App 的支持范围，当前组合以上面的版本锁定为准。
 
 # dsh-plugin-mobile-gateway
 
@@ -104,7 +104,9 @@ endpoints:
 
 测试结果与人工步骤见 [验收报告](docs/multi-gateway-phase1-acceptance.md)，完成范围见 [多网关待办](docs/multi-gateway-todo.md)。
 
-## 配套 Android 与 iOS 客户端
+## 上游客户端：Whaleness
+
+本节及截图介绍上游的独立客户端，本 fork 未验证其当前 Android 或 iOS 版本的兼容性。使用我们维护的 DSH Mobile App，请按上方链接的使用说明配置。
 
 [Whaleness](https://github.com/Clarklevis1995/dsh-mobile) 是与本移动网关配套的独立开发第三方原生客户端，支持 Android 7.0+ 与 iOS / iPadOS 16.1+，通过 Kotlin Multiplatform 共享业务逻辑，分别使用 Jetpack Compose 和 SwiftUI/UIKit 构建界面。支持工作区与会话、实时对话、智能体团队与共享任务、文件上传与预览、文字选择、Markdown 表格、聊天记录与缓存管理、语音输入、问答审批，以及服务端驱动的命令、技能、模型和权限菜单。iPhone Duo 与宽屏布局随方向和可用空间调整，系统效果受 OS 与设备能力限制。下载、连接指南和最新截图见客户端仓库。
 
@@ -176,25 +178,21 @@ endpoints:
 
 ## 安装插件
 
-前提：Node.js 22 及以上，已经安装 `dsh` CLI 和 `pnpm`，并能正常启动 `dsh web`。可先执行 `pnpm --version` 确认当前用户的环境能够找到 `pnpm`。
+> **以 `main` 分支上的文档为准。** 打包进不可变标签的 README 只是历史快照，可能仍包含上游 npm 安装说明，不要按它安装。
+
+前提：Node.js 22.13 及以上、pnpm 11.9.x，已经安装 `dsh` CLI，并能正常启动 `dsh web`。可先执行 `pnpm --version` 确认当前用户的环境能够找到 `pnpm`。
 
 RTC 库是插件的正式运行时依赖，由安装流程自动安装，不需要用户单独执行 npm 安装命令。
 
-局域网使用只需安装插件：
+安装请遵循配套 App 的规范指南：[Agent 安装手册](https://github.com/solla-h/dsh-mobile-app/blob/master/docs/AGENT-SETUP.md)（供 agent 使用），或[使用说明](https://github.com/solla-h/dsh-mobile-app/blob/master/docs/USER-GUIDE.zh-CN.md)（手动安装）。按 [`compatibility.json`](https://github.com/solla-h/dsh-mobile-app/blob/master/compatibility.json) 记录的精确 GitHub 标签安装，不要使用 npm：
 
 ```bash
-dsh plugin --profile web add dsh-plugin-mobile-gateway@latest
+dsh plugin --profile web add github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3
 ```
 
-需要在 Linux 服务器通过公网 IP 接入时，推荐执行统一初始化命令。它会安装/更新插件，并请求一次 sudo 权限安装系统 Helper：
+同名 npm 包属于上游发行线。本 fork 不要使用它的 `@latest` 标签或 `init` 命令：`init` 会尝试安装本 fork 并未发布的精确 npm 版本。
 
-```bash
-npx --yes dsh-plugin-mobile-gateway@latest init
-```
-
-`init` 会把当前正在执行的 npm 包精确版本安装到 DSH profile，并仅对该版本跳过 pnpm 的新版本等待期，确保插件与 Helper 版本一致。
-
-安装后停止并重新启动 WebUI：
+执行安装命令前先停止整个 `dsh web` 操作系统进程。安装完成后，使用原工作目录及启动参数再次启动：
 
 ```bash
 dsh web
@@ -219,30 +217,23 @@ dsh web
 ## Linux 服务器公网 IP 配对
 
 > [!NOTE]
-> 本文所说的“公网 IP 配对”特指 Linux 服务器。一键公网安装从 `v0.6.4` 开始提供，适用于带固定公网 IPv4 的 Ubuntu/Debian 服务器。服务器需要已经安装 Node.js、`pnpm` 和 `dsh` CLI；当前尚不支持 CentOS。
+> 本文所说的“公网 IP 配对”特指 Linux 服务器。系统 Helper 安装适用于带固定公网 IPv4 的 Ubuntu/Debian 服务器（自上游 `v0.6.4` 起提供）。服务器需要已经安装 Node.js 22.13+、pnpm 11.9.x 和 `dsh` CLI；当前尚不支持 CentOS。
 
 ### 1. 准备公网端口
 
 在云厂商控制台复制服务器的公网 IPv4，并在安全组中放行入站 TCP `80` 和 `443`。不要将 DSH WebUI 端口或 TCP `3081` 开放到公网。
 
-### 2. 一键初始化
+### 2. 安装系统 Helper
 
-先确认普通 DSH 用户可以直接调用 `pnpm`：
-
-```bash
-pnpm --version
-```
-
-然后使用同一个普通用户执行（不要使用 `root` 或 `sudo npx`）：
+先按[安装插件](#安装插件)安装 fork 的精确标签。然后使用运行 `dsh web` 的同一个普通用户，带 sudo 通过 npx 从同一精确 GitHub 标签执行 `setup-helper` 子命令：
 
 ```bash
-npm_config_registry=https://registry.npmjs.org \
-npx --yes dsh-plugin-mobile-gateway@latest init
+sudo env "PATH=$PATH" npx --yes github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3 setup-helper
 ```
 
-该命令会安装或更新插件，并请求一次 sudo 权限安装 Nginx、Certbot、系统 Helper 和证书续期定时器。`init` 会确保 DSH profile 与 Helper 使用同一个精确版本。
+`setup-helper` 会安装 Nginx、Certbot、系统 Helper 和证书续期定时器；它不会重装或更新插件。不要执行 `init`：该命令属于上游 npm 发行线，会安装本 fork 并未发布的版本。
 
-完成后启动或重新启动 WebUI：
+完成后启动或重新启动 `dsh web` 操作系统进程：
 
 ```bash
 dsh web
@@ -347,7 +338,7 @@ Tailscale Serve 只允许同一 Tailnet 中符合访问规则的设备连接，�
 |---|---|---|---|---|
 | 同一局域网 | 插件局域网入口 | `ws://<电脑局域网 IP>:3081/ws/mobile` | 无需 Helper 或 Nginx；电脑与手机 位于可互访的局域网 | 仅对私有网络放行 TCP `3081`；保持鉴权开启 |
 | 本机 iOS 模拟器 | DSH WebUI 本地入口 | `ws://127.0.0.1:<DSH WebUI 端口>/ws/mobile` | 无需 Helper、Nginx 或独立的 `3081` 端口 | 不开放任何外部端口；仅 Debug 时可关闭鉴权 |
-| Linux 公网服务器 | 插件 Helper + Nginx + TLS | `wss://<服务器公网 IPv4>/ws/mobile` | 执行 `init`，再从 WebUI 填写公网 IPv4 | 云安全组放行 TCP `80/443`；不要公开 DSH 端口和 `3081`；必须鉴权 |
+| Linux 公网服务器 | 插件 Helper + Nginx + TLS | `wss://<服务器公网 IPv4>/ws/mobile` | 安装 fork 后执行 `setup-helper`，再从 WebUI 填写公网 IPv4 | 云安全组放行 TCP `80/443`；不要公开 DSH 端口和 `3081`；必须鉴权 |
 | 家用 Windows / macOS | Cloudflare 命名 Tunnel | `wss://<公开域名>/ws/mobile` | 在 Cloudflare 建立公开域名到 `127.0.0.1:3082` 的路由；面板填写域名与 Token 并开启 | 无需路由器端口转发；独立入口强制设备鉴权 |
 | 家用 Windows / macOS | Cloudflare Quick Tunnel | `wss://<随机名称>.trycloudflare.com/ws/mobile` | 面板一键开启；重启或重连后地址变化需重新扫码 | 无需域名、账户或端口转发；独立入口强制设备鉴权 |
 | 家用 Windows / macOS | Tailscale Serve | `wss://<Tailscale 域名>/ws/mobile` | 手动转发到 `127.0.0.1:3081`，将生成的地址填入 WebUI | 无需路由器端口转发；保持鉴权开启 |
@@ -357,24 +348,18 @@ Tailscale Serve 只允许同一 Tailnet 中符合访问规则的设备连接，�
 查看状态：
 
 ```bash
-sudo env "PATH=$PATH" npx --yes dsh-plugin-mobile-gateway@latest status
+sudo env "PATH=$PATH" npx --yes github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3 status
 ```
 
 移除公网入口：
 
 ```bash
-sudo env "PATH=$PATH" npx --yes dsh-plugin-mobile-gateway@latest remove
+sudo env "PATH=$PATH" npx --yes github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3 remove
 ```
 
 ## 更新插件
 
-重新运行初始化命令会同时更新插件和系统 Helper：
-
-```bash
-npx --yes dsh-plugin-mobile-gateway@latest init
-```
-
-随后停止并重新启动 `dsh web`。
+使用 App [兼容性清单](https://github.com/solla-h/dsh-mobile-app/blob/master/compatibility.json)推荐的精确标签，按[安装手册](https://github.com/solla-h/dsh-mobile-app/blob/master/docs/AGENT-SETUP.md)执行。保留网关、设备和地址簿状态，**先停止**整个 `dsh web` 操作系统进程，再安装插件，最后使用原工作目录和启动参数重新启动。出现新标签不代表 App 已推荐该版本。不要使用 `@latest` 或 `init`；它们解析的是上游 npm 包，不是本 fork。
 
 ## 卸载插件
 
@@ -382,10 +367,10 @@ npx --yes dsh-plugin-mobile-gateway@latest init
 dsh plugin --profile web remove dsh-plugin-mobile-gateway
 ```
 
-如需同时移除系统 Helper（不会删除现有 Nginx 公网配置）：
+如需同时移除系统 Helper（不会删除现有 Nginx 公网配置），请通过 npx 从同一精确 fork 标签执行 `remove-helper`：
 
 ```bash
-sudo env "PATH=$PATH" npx --yes dsh-plugin-mobile-gateway@latest remove-helper
+sudo env "PATH=$PATH" npx --yes github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3 remove-helper
 ```
 
 ## 常见问题

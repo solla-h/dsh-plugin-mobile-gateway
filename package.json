@@ -15,11 +15,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Clarklevis1995/dsh-plugin-mobile-gateway.git"
+    "url": "git+https://github.com/solla-h/dsh-plugin-mobile-gateway.git"
   },
-  "homepage": "https://github.com/Clarklevis1995/dsh-plugin-mobile-gateway#readme",
+  "homepage": "https://github.com/solla-h/dsh-plugin-mobile-gateway#readme",
   "bugs": {
-    "url": "https://github.com/Clarklevis1995/dsh-plugin-mobile-gateway/issues"
+    "url": "https://github.com/solla-h/dsh-plugin-mobile-gateway/issues"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.1",
@@ -32,7 +32,7 @@
     "dsh-mobile-gateway-rendezvous": "bin/rendezvous.mjs"
   },
   "scripts": {
-    "test": "node --test test/network-addresses.test.mjs test/connection-choice-ui.test.cjs && node --test test/network-diagnostics.test.mjs test/network-diagnostics-ui.test.cjs && node --test test/logging.test.mjs && node test/wire-json.test.mjs && node test/setup-ip.test.mjs && node test/host-adapter.test.mjs && node --test test/file-upload.test.mjs && node test/speech-input.test.mjs && node test/plugin-management.test.mjs && node test/session-preset.test.mjs && node test/session-follower.test.mjs && node --test test/agent-team.test.mjs && node test/session-event-details.test.mjs && node test/gateway.test.mjs && node --test test/approval-replay.test.mjs && node --test test/question-replay.test.mjs && node test/auth.test.mjs && node test/lan.test.mjs && node test/cloudflared-binary.test.mjs && node test/cloudflare-tunnel.test.mjs && node --test test/public-endpoint-check.test.mjs && node test/gateway-tools.test.mjs && node test/multi-gateway.test.mjs && npm run test:webrtc && node --test test/rendezvous.test.mjs && node --test rendezvous-worker/test/handler.test.mjs && node --test test/rendezvous-deploy.test.mjs",
+    "test": "node --test test/network-addresses.test.mjs test/connection-choice-ui.test.cjs && node --test test/network-diagnostics.test.mjs test/network-diagnostics-ui.test.cjs && node --test test/logging.test.mjs && node test/wire-json.test.mjs && node test/setup-ip.test.mjs && node test/host-adapter.test.mjs && node --test test/file-upload.test.mjs && node test/speech-input.test.mjs && node test/plugin-management.test.mjs && node test/session-preset.test.mjs && node test/session-follower.test.mjs && node --test test/agent-team.test.mjs && node test/session-event-details.test.mjs && node test/gateway.test.mjs && node --test test/gateway-state.test.mjs && node --test test/approval-replay.test.mjs && node --test test/question-replay.test.mjs && node test/auth.test.mjs && node test/lan.test.mjs && node test/cloudflared-binary.test.mjs && node test/cloudflare-tunnel.test.mjs && node --test test/public-endpoint-check.test.mjs && node test/gateway-tools.test.mjs && node test/multi-gateway.test.mjs && npm run test:webrtc && node --test test/rendezvous.test.mjs && node --test rendezvous-worker/test/handler.test.mjs && node --test test/rendezvous-deploy.test.mjs",
     "test:webrtc": "node --test test/webrtc/*.test.mjs",
     "test:package": "node --test test/package-install.test.mjs",
     "test:webrtc:stress": "node test/webrtc/stress.mjs"

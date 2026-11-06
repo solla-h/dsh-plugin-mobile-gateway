@@ -4,13 +4,13 @@
 > ```sh
 > dsh plugin --profile web add github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3
 > ```
-> Upstream project: [Clarklevis1995/dsh-plugin-mobile-gateway](https://github.com/Clarklevis1995/dsh-plugin-mobile-gateway).
+> Upstream project: [Clarklevis1995/dsh-plugin-mobile-gateway](https://github.com/Clarklevis1995/dsh-plugin-mobile-gateway). Fork maintenance policy: [docs/MAINTAINING.md](docs/MAINTAINING.md).
 
 > Some linked protocol and integration documents are currently available only in Chinese.
 
-<p align="center">
-  <img src="docs/assets/whale-girl-ios-app-promo-16x9.png" alt="Whaleness mobile client and Mobile Gateway" width="100%">
-</p>
+This fork is maintained for [DSH Mobile](https://github.com/solla-h/dsh-mobile-app), currently an Android public alpha; iOS is deferred. Start with its [setup guide](https://github.com/solla-h/dsh-mobile-app/blob/master/docs/USER-GUIDE.md) and [version lock](https://github.com/solla-h/dsh-mobile-app/blob/master/compatibility.json): DSH `0.2.1-rc.5` + gateway `0.12.0-rdv.3`. **Stop the DSH Web OS process before installing or updating the plugin, then start it again.**
+
+The implementation notes below retain upstream history and its `0.2.1-rc.2` adapter baseline. Historical “not released” notes and other clients' screenshots do not define this fork's supported App combination; use the version lock above.
 
 # dsh-plugin-mobile-gateway
 
@@ -104,7 +104,9 @@ Keep both files when upgrading or migrating machines. For a new independent gate
 
 See the [acceptance report](docs/multi-gateway-phase1-acceptance.md) for tests/manual steps and the [multi-gateway checklist](docs/multi-gateway-todo.md) for scope.
 
-## Companion Android and iOS Client
+## Upstream Client: Whaleness
+
+This section and its screenshots describe upstream's separate client. This fork does not establish compatibility with its current Android or iOS releases. For the maintained DSH Mobile app, use the setup guide linked above.
 
 [Whaleness](https://github.com/Clarklevis1995/dsh-mobile) is the independently developed third-party native mobile client paired with this gateway. It supports Android 7.0+ and iOS / iPadOS 16.1+, sharing business logic through Kotlin Multiplatform with Jetpack Compose and SwiftUI/UIKit interfaces. Features include workspaces and sessions, live conversations, Agent teams and shared tasks, file uploads/previews, text selection, Markdown tables, local history/cache management, voice input, approvals, and server-driven command, skill, model, and permission menus. iPhone Duo and wide-screen layouts adapt to orientation and available space. System-dependent effects vary by OS and device. See the client repository for downloads, setup, and current screenshots.
 
@@ -176,25 +178,21 @@ See the [acceptance report](docs/multi-gateway-phase1-acceptance.md) for tests/m
 
 ## Install the Plugin
 
-Requires Node.js 22 or newer. The RTC library is a required runtime dependency installed automatically with the plugin; no separate dependency installation is needed.
+> **The documentation on `main` is authoritative.** A README packaged inside an immutable tag is a historical snapshot and may still contain upstream npm instructions; do not use it for installation.
+
+Requires Node.js 22.13 or newer and pnpm 11.9.x. The RTC library is a required runtime dependency installed automatically with the plugin; no separate dependency installation is needed.
 
 Prerequisites: `dsh` CLI and `pnpm` installed, with `dsh web` working. Run `pnpm --version` to ensure the current user can find `pnpm`.
 
-For LAN use, install the plugin:
+Follow the companion app's canonical setup guide: [Agent setup guide](https://github.com/solla-h/dsh-mobile-app/blob/master/docs/AGENT-SETUP.md) for agents, or the [user guide](https://github.com/solla-h/dsh-mobile-app/blob/master/docs/USER-GUIDE.md) for a manual install. Install the exact GitHub tag recorded in [`compatibility.json`](https://github.com/solla-h/dsh-mobile-app/blob/master/compatibility.json), not npm:
 
 ```bash
-dsh plugin --profile web add dsh-plugin-mobile-gateway@latest
+dsh plugin --profile web add github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3
 ```
 
-For public-IP access on a Linux server, use the unified initializer. It installs/updates the plugin and requests sudo once to install the system Helper:
+The same-named npm package belongs to the upstream release line. Do not use its `@latest` tag or `init` command for this fork: `init` tries to install an exact npm version that this fork does not publish.
 
-```bash
-npx --yes dsh-plugin-mobile-gateway@latest init
-```
-
-`init` installs the exact version of the executing npm package into the DSH profile and skips pnpm's new-release waiting period for that version only, keeping plugin and Helper versions aligned.
-
-After installation, stop and restart WebUI:
+Before running the install command, stop the entire `dsh web` OS process. After installation, start it again with its original working directory and startup options:
 
 ```bash
 dsh web
@@ -219,30 +217,23 @@ If a firewall blocks the connection, allow TCP `3081` only on private networks. 
 ## Public-IP Pairing on Linux Servers
 
 > [!NOTE]
-> Public-IP pairing here specifically means Linux servers. The one-command setup is available since `v0.6.4` for Ubuntu/Debian with a fixed public IPv4. Node.js, `pnpm`, and the `dsh` CLI must already be installed. CentOS is not currently supported.
+> Public-IP pairing here specifically means Linux servers. The system Helper setup is available for Ubuntu/Debian with a fixed public IPv4 (since upstream `v0.6.4`). Node.js 22.13+, pnpm 11.9.x, and the `dsh` CLI must already be installed. CentOS is not currently supported.
 
 ### 1. Prepare Public Ports
 
 Copy the public IPv4 from your cloud console and allow inbound TCP `80` and `443` in its security group. Do not expose the DSH WebUI port or TCP `3081` publicly.
 
-### 2. Initialize
+### 2. Install the System Helper
 
-First confirm the regular DSH user can run `pnpm`:
-
-```bash
-pnpm --version
-```
-
-Then run as that same regular user, not `root` or `sudo npx`:
+Install the fork's exact tag first (see [Install the Plugin](#install-the-plugin)). Then, as the same regular user that runs `dsh web`, run the `setup-helper` subcommand via npx using the same exact GitHub tag with sudo:
 
 ```bash
-npm_config_registry=https://registry.npmjs.org \
-npx --yes dsh-plugin-mobile-gateway@latest init
+sudo env "PATH=$PATH" npx --yes github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3 setup-helper
 ```
 
-This installs/updates the plugin and requests sudo once for Nginx, Certbot, the system Helper, and certificate renewal timers. `init` aligns the exact DSH-profile and Helper versions.
+`setup-helper` installs Nginx, Certbot, the system Helper, and certificate renewal timers. It does not reinstall or update the plugin. Do not run `init`; that command belongs to the upstream npm release line and installs a version this fork does not publish.
 
-Start or restart WebUI afterward:
+Start or restart the `dsh web` OS process afterward:
 
 ```bash
 dsh web
@@ -347,7 +338,7 @@ Tailscale Serve allows only devices permitted by the same Tailnet's access rules
 |---|---|---|---|---|
 | Same LAN | Plugin LAN listener | `ws://<电脑局域网 IP>:3081/ws/mobile` | No Helper/Nginx; host and phone must reach each other | Private TCP `3081` only; keep authentication on |
 | Local iOS Simulator | DSH WebUI local route | `ws://127.0.0.1:<DSH WebUI 端口>/ws/mobile` | No Helper/Nginx or separate port `3081` | No external ports; disable authentication only for Debug |
-| Public Linux server | Helper + Nginx + TLS | `wss://<服务器公网 IPv4>/ws/mobile` | Run `init`, then enter public IPv4 in WebUI | Allow TCP `80/443`; do not expose DSH/`3081`; authentication required |
+| Public Linux server | Helper + Nginx + TLS | `wss://<服务器公网 IPv4>/ws/mobile` | Install the fork, run `setup-helper`, then enter public IPv4 in WebUI | Allow TCP `80/443`; do not expose DSH/`3081`; authentication required |
 | Home Windows / macOS | Cloudflare named Tunnel | `wss://<公开域名>/ws/mobile` | Route public hostname to `127.0.0.1:3082`; enter hostname/Token in panel | No router forwarding; dedicated listener requires device authentication |
 | Home Windows / macOS | Cloudflare Quick Tunnel | `wss://<随机名称>.trycloudflare.com/ws/mobile` | Enable in panel; scan again after URL changes | No account/domain/router forwarding; device authentication required |
 | Home Windows / macOS | Tailscale Serve | `wss://<Tailscale 域名>/ws/mobile` | Forward to `127.0.0.1:3081` and enter generated URL in WebUI | No router forwarding; keep authentication on |
@@ -357,24 +348,18 @@ Tailscale Serve allows only devices permitted by the same Tailnet's access rules
 Check status:
 
 ```bash
-sudo env "PATH=$PATH" npx --yes dsh-plugin-mobile-gateway@latest status
+sudo env "PATH=$PATH" npx --yes github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3 status
 ```
 
 Remove public access:
 
 ```bash
-sudo env "PATH=$PATH" npx --yes dsh-plugin-mobile-gateway@latest remove
+sudo env "PATH=$PATH" npx --yes github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3 remove
 ```
 
 ## Update the Plugin
 
-Rerun initialization to update both the plugin and system Helper:
-
-```bash
-npx --yes dsh-plugin-mobile-gateway@latest init
-```
-
-Then stop and restart `dsh web`.
+Use the exact tag recommended by the App's [compatibility manifest](https://github.com/solla-h/dsh-mobile-app/blob/master/compatibility.json), following the [setup guide](https://github.com/solla-h/dsh-mobile-app/blob/master/docs/AGENT-SETUP.md). Preserve gateway/device/rendezvous state, stop the entire `dsh web` OS process **before** installing the plugin, then start it again with the original working directory and startup options. A newer tag alone is not an App compatibility recommendation. Do not use `@latest` or `init`; they resolve the upstream npm package, not this fork.
 
 ## Uninstall
 
@@ -382,10 +367,10 @@ Then stop and restart `dsh web`.
 dsh plugin --profile web remove dsh-plugin-mobile-gateway
 ```
 
-To remove the system Helper too (existing Nginx public-access configuration is retained):
+To remove the system Helper too (existing Nginx public-access configuration is retained), run `remove-helper` via npx using the same exact fork tag:
 
 ```bash
-sudo env "PATH=$PATH" npx --yes dsh-plugin-mobile-gateway@latest remove-helper
+sudo env "PATH=$PATH" npx --yes github:solla-h/dsh-plugin-mobile-gateway#v0.12.0-rdv.3 remove-helper
 ```
 
 ## Troubleshooting
